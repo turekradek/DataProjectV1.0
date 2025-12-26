@@ -1,0 +1,12 @@
+# python
+.venv
+.vscode
+
+src/__pycache__/
+src/dataprojectv1/__pycache__
+src/dataprojectv1/api/__pycache__
+src/dataprojectv1/api/app/__pycache__
+src/docker/api/__pycache__
+src/docker/api/app/__pycache__
+src/docker/db/__pycache__
+src/app.log

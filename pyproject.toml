@@ -1,0 +1,20 @@
+[project]
+name = "dataprojectv1-0"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Radek Turek",email = "turekradek@gmail.com"}
+]
+readme = "README.md"
+[tool.poetry.dependencies]
+python = ">=3.11"
+requests = "^2.32.3"
+pandas = "^2.2.3"
+
+
+[tool.poetry]
+packages = [{include = "dataprojectv1", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

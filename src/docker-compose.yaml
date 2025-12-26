@@ -1,0 +1,221 @@
+version: '3.8'
+
+services:
+  # db: 
+  #   build: 
+  #     context: .
+  #     dockerfile: postgres:16-alpine #DockerfilePostgres
+  #   container_name: postgresdb
+  #   restart: always
+  #   image: project_db:latest
+  #   environment: 
+  #     POSTGRES_USER: ${POSTGRES_USER:-postgres} #postgres
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password} #password 
+  #     POSTGRES_DB: ${POSTGRES_DB:-dataproject} #postgres
+  #   volumes: 
+        # - postgres_data:/var/lib/postgresql/data:Z  # Główny wolumen na dane bazy
+        # - ./init:/docker-entrypoint-initdb.d:Z     # Automatyczne tworzenie tabel przy starcie
+        # # Mapowanie folderów z danymi do obróbki
+        # - ./files_csv:/files_csv:Z
+
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json 
+  #   ports: 
+  #     - "5433:5432" 
+  #   networks: 
+  #     - project1_network
+
+  prometheus:
+    image: docker.io/prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml:Z
+      - metrics:/prometheus:Z
+      # - /home/r/git_projekty/dataEngieneeringProject/project/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      # - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json 
+    ports:
+      - "9090:9090"
+    networks:
+      - project1_network
+
+  grafana:
+    image: docker.io/grafana/grafana:latest
+    container_name: grafana 
+    volumes:
+      - grafana_data:/var/lib/grafana:Z
+      # - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json 
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - project1_network
+
+  flask_app: 
+    build: 
+      context: .
+      dockerfile: docker/api/Dockerfile 
+    container_name: flask_app 
+    volumes:
+      - .:/app:Z
+      - ./files_csv:/files_csv:Z
+      # - ./flask_app:/app
+      # - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv 
+      # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json 
+    environment:
+      - FLASK_ENV=development 
+      - FLASK_APP=dataprojectv1.api.app.app:app
+      - PYTHONPATH=/app
+    ports:
+      - "5000:5000" 
+    # depends_on:
+    # #  - db 
+    #   - prometheus
+    #   - filebeat
+    networks:
+      - project1_network
+
+  # python_container: 
+  #   build:
+  #     context: . 
+  #     dockerfile: Dockerfile2
+  #   # image: python:1.0
+  #   container_name: pythonapp
+  #   volumes: 
+  #     - ./scripts:/scripts 
+  #     - postgres_data:/var/lib/postgresql/data 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv 
+  #     - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json 
+  #   depends_on: 
+  #     - db 
+  #   command: > 
+  #     sh -c "tail -f /dev/null" 
+  #   networks: 
+  #     - project1_network
+
+  elasticsearch: 
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0 
+    container_name: elasticsearch 
+    environment: 
+      - discovery.type=single-node 
+      - xpack.security.enabled=false
+    ports: 
+      - "9200:9200" 
+      - "9300:9300" 
+    networks: 
+      - project1_network
+
+  # filebeat: 
+  #   image: docker.elastic.co/beats/filebeat:8.17.0 
+  #   container_name: filebeat 
+  #   user: root 
+  #   volumes: 
+  #     - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro 
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro 
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro 
+  #   environment: 
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 
+  #   networks:
+  #     - project1_network 
+  #   depends_on: 
+  #     - elasticsearch
+
+  kibana: 
+    image: docker.elastic.co/kibana/kibana:8.17.0 
+    container_name: kibana 
+    environment: 
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200 
+    ports: 
+      - "5601:5601" 
+    networks: 
+      - project1_network
+
+  elasticvue: 
+    image: docker.io/cars10/elasticvue 
+    container_name: elasticvue 
+    ports: 
+      - "8080:8080" 
+    networks: 
+      - project1_network
+
+  zookeeper: 
+    image: docker.io/confluentinc/cp-zookeeper:latest 
+    container_name: zookeeper
+    environment: 
+      ZOOKEEPER_CLIENT_PORT: 2181 
+      ZOOKEEPER_TICK_TIME: 2000 
+    ports: 
+      - "2181:2181" 
+    volumes:
+      - ./data/zookeeper/data:/var/lib/zookeeper/data:Z
+      - ./data/zookeeper/log:/var/lib/zookeeper/log:Z
+    networks: 
+      - project1_network
+
+  kafka: 
+    image: docker.io/confluentinc/cp-kafka:7.5.0 
+    container_name: kafka
+    environment: 
+      KAFKA_BROKER_ID: 1 
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 
+    ports: 
+      - "9092:9092" 
+    volumes:
+      - ./data/kafka/data:/var/lib/kafka/data:Z
+    depends_on:  
+      - zookeeper 
+    networks: 
+      - project1_network
+
+  kafka-ui:
+    image: docker.io/provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka  # Czekaj, aż kontener Kafki wystartuje
+    ports:
+      - "8081:8080" # Zmieniłem na 8081, bo na 8080 masz Elasticvue
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    networks:
+      - project1_network
+
+volumes:
+  postgres_data:
+  bronze:
+  silver:
+  gold:
+  metrics:
+  grafana_data:
+
+networks:
+  project1_network:
+    driver: bridge
+
