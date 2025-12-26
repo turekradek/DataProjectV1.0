@@ -73,7 +73,9 @@ services:
     container_name: flask_app 
     volumes:
       - .:/app:Z
-      - ./files_csv:/files_csv:Z
+      - ./filescsv:/app/filescsv:Z
+      - ./filesjson:/app/filesjson:Z
+      # - ./files_csv:/app/files_csv:Z
       # - ./flask_app:/app
       # - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume 
       # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze 
@@ -82,9 +84,10 @@ services:
       # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv 
       # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json 
     environment:
-      - FLASK_ENV=development 
-      - FLASK_APP=dataprojectv1.api.app.app:app
-      - PYTHONPATH=/app
+      # - FLASK_ENV=development
+      - FLASK_DEBUG=1 
+      - FLASK_APP=dataprojectv1.api.app.app.py
+      - PYTHONPATH=/src
     ports:
       - "5000:5000" 
     # depends_on:

@@ -6,6 +6,8 @@ import logging
 from datetime import datetime
 import pandas as pd 
 
+from .utils import render_pretty_table
+
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 
@@ -34,7 +36,12 @@ def index():
 
 @app.route('/filescsv')
 def filescsv():
-    filespath = '../../files_csv'
+    filespath = '/app/filescsv'
+    
+    if not os.path.exists(filespath):
+        logger.error(f"Directory not found: {filespath}")
+        return {"error": "Path not found"}, 404
+    
     fileslist = os.listdir(filespath)
     logger.info(f"This is an info message: Filelist: {fileslist}")
     
@@ -61,22 +68,33 @@ def customize_file_content(content, background_color='#f9f9f9', padding='10px', 
 
 @app.route('/filescsv/<filename>')
 def view_csv_file(filename):
-    filespath = '../../files_csv'
+    filespath = '/app/filescsv'
     filepath = os.path.join(filespath, filename)
     
     if not os.path.exists(filepath):
         return f"File {filename} not found.", 404
     
-    with open(filepath, 'r') as file:
-        content = file.read()
+    # with open(filepath, 'r') as file:
+    #     content = file.read()
     
-    logger.info(f"Viewing content of file: {filename}")
-    customized_content = customize_file_content(content)
-    return f"<h2>Content of {filename}</h2>{customized_content}"
+    # logger.info(f"Viewing content of file: {filename}")
+    # customized_content = customize_file_content(content)
+    # return f"<h2>Content of {filename}</h2>{customized_content}"
+    try:
+        # Read CSV to Pandas
+        df = pd.read_csv(filepath)
+        
+        # Convert to HTML with Bootstrap classes for a nice appearance
+        html_table = df.to_html(classes='table table-striped table-hover', index=False)
+        
+        return render_pretty_table(df, filename)
+    except Exception as e:
+        logger.error(f"Error processing CSV: {e}")
+        return f"Error processing file: {str(e)}", 500
 
 @app.route('/filesjson')
 def filesjson():
-    filespath = '../files_json'
+    filespath = '/app/filesjson'
     fileslist = os.listdir(filespath)
     logger.info(f"This is an info message: Filelist filesjson: {fileslist}")
     
@@ -97,20 +115,31 @@ def filesjson():
 
 @app.route('/filesjson/<filename>')
 def view_json_file(filename):
-    filespath = '../files_json'
+    filespath = '/app/filesjson'
     # filepath = os.path.join(filespath, f"{filename}.json")
     filepath = os.path.join(filespath, f"{filename}")
     
     if not os.path.exists(filepath):
         return f"File {filename}.json not found.", 404
     
-    with open(filepath, 'r') as file:
-        content = file.read()
+    # with open(filepath, 'r') as file:
+    #     content = file.read()
     
-    logger.info(f"Viewing content of file: {filename}.json")
-    customized_content = customize_file_content(content)
-    # return f"<h2>Content of {filename}.json</h2>{customized_content}"
-    return f"{content}"
+    # logger.info(f"Viewing content of file: {filename}.json")
+    # customized_content = customize_file_content(content)
+    # # return f"<h2>Content of {filename}.json</h2>{customized_content}"
+    # return f"{content}"
+    try:
+        # Read CSV to Pandas
+        df = pd.read_json(filepath)
+        
+        # Convert to HTML with Bootstrap classes for a nice appearance
+        html_table = df.to_html(classes='table table-striped table-hover', index=False)
+        
+        return render_pretty_table(df, filename)
+    except Exception as e:
+        logger.error(f"Error processing CSV: {e}")
+        return f"Error processing file: {str(e)}", 500
 
 def customize_df_html(df, header_bg_color='#f2f2f2', even_row_bg_color='#f9f9f9', odd_row_bg_color='#ffffff', font_weight='bold'):
     styles = [
@@ -231,5 +260,6 @@ def files_list( path ):
     fileslist = os.listdir(path)
     return fileslist
 
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
