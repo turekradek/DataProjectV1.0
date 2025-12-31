@@ -69,28 +69,18 @@ services:
       dockerfile: docker/api/Dockerfile
     container_name: flask_app
     volumes:
-      - .:/app:Z
+      - ./src:/app:Z
       - ./filescsv:/app/filescsv:Z
       - ./filesjson:/app/filesjson:Z
-      # - ./files_csv:/app/files_csv:Z
-      # - ./flask_app:/app
-      # - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume
-      # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze
-      # - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver
-      # - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json
     environment:
-      # - FLASK_ENV=development
       - FLASK_DEBUG=1
-      - FLASK_APP=dataprojectv1.api.app.app.py
-      - PYTHONPATH=/src
+      # ZMIANA: Ścieżka do modułu musi uwzględniać to, że /app to Twoje src
+      - FLASK_APP=dataprojectv1.api.app.app
+      - PYTHONPATH=/app
     ports:
       - "5000:5000"
-    # depends_on:
-    # #  - db
-    #   - prometheus
-    #   - filebeat
+    depends_on:
+      - db
     networks:
       - project1_network
 
@@ -204,6 +194,48 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    networks:
+      - project1_network
+
+  airflow-webserver:
+    image: docker.io/apache/airflow:2.8.0-python3.11
+    container_name: airflow_webserver
+    restart: always
+    depends_on:
+      - db
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - _AIRFLOW_DB_UPGRADE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=admin
+    volumes:
+      # Upewnij się, że te foldery istnieją w Twoim Root (nie w src!)
+      - ./airflow/dags:/opt/airflow/dags:Z
+      - ./airflow/logs:/opt/airflow/logs:Z
+      - ./airflow/plugins:/opt/airflow/plugins:Z
+    ports:
+      - "8082:8080"
+    networks:
+      - project1_network
+
+  airflow-scheduler:
+    image: docker.io/apache/airflow:2.8.0-python3.11
+    container_name: airflow_scheduler
+    restart: always
+    depends_on:
+      - airflow-webserver
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:Z
+      - ./airflow/logs:/opt/airflow/logs:Z
+      - ./airflow/plugins:/opt/airflow/plugins:Z
+      - ./filescsv:/filescsv:Z
+      - ./filesjson:/filesjson:Z
     networks:
       - project1_network
 
