@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def list_tables():
@@ -39,7 +39,7 @@ def list_tables():
 with DAG(
     dag_id="inspect_postgres_tables_v1",
     start_date=datetime(2025, 1, 1),
-    schedule_interval=None,
+    schedule_interval=timedelta(hours=6),  # "30 3,5,11,15,23 * * *"
     catchup=False,
     tags=["mentor_it", "exploration"],
 ) as dag:
