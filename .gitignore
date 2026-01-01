@@ -12,4 +12,6 @@ src/docker/db/__pycache__
 src/app.log
 
 # airflow logs
-airflow/logs/*
+airflow/logs/dag*
+airflow/logs
+airflow/dags/__pycache__/
