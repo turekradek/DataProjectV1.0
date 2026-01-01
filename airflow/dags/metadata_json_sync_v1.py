@@ -3,40 +3,61 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 import os
 from datetime import datetime
+import logging
+from airflow.models import Variable
 
-# Ścieżki i konfiguracja
 JSON_FOLDER = "/opt/airflow/filesjson"
 CONN_ID = "postgres_main"
 
 
 def get_json_list():
-    # Pobieramy tylko pliki .json
     files = [f for f in os.listdir(JSON_FOLDER) if f.endswith(".json")]
     return files
 
 
 def check_db_content():
     hook = PostgresHook(postgres_conn_id=CONN_ID)
-    # Sprawdzamy tabelę files_json
     records = hook.get_records("SELECT filename FROM files_json")
     return [r[0] for r in records]
 
 
 def insert_new_json_files(ti):
-    all_files = ti.xcom_pull(task_ids="list_json_files")
-    existing_files = ti.xcom_pull(task_ids="check_json_database")
+    # Pobieranie flag konfiguracyjnych (Best Practice: wewnątrz taska)
+    debug_mode = Variable.get("debug_mode", default_var=False)
+    # Domyślnie True dla bezpieczeństwa
+    dry_run = Variable.get("dry_run", default_var=True)
+
+    all_files = ti.xcom_pull(task_ids="list_json_files") or []
+    existing_files = ti.xcom_pull(task_ids="check_json_database") or []
+
+    if debug_mode:
+        logging.info(f"DEBUG: Wszystkie pliki w folderze: {all_files}")
+        logging.info(f"DEBUG: Pliki już obecne w bazie: {existing_files}")
 
     new_files = [f for f in all_files if f not in existing_files]
 
     if not new_files:
-        print("Brak nowych plików JSON.")
+        logging.info("Brak nowych plików JSON.")
         return
 
     hook = PostgresHook(postgres_conn_id=CONN_ID)
 
     for f in new_files:
         full_path = os.path.join(JSON_FOLDER, f)
-        file_size = os.path.getsize(full_path) // 1024  # rozmiar w KB
+
+        if not os.path.exists(full_path):
+            logging.warning(f"Plik {f} zniknął przed przetworzeniem!")
+            continue
+
+        file_size = os.path.getsize(full_path) // 1024
+
+        if debug_mode:
+            logging.info(f"DEBUG: Przetwarzanie pliku: {f}, rozmiar: {file_size}KB")
+
+        # Logika Dry Run
+        if dry_run:
+            logging.info(f"[DRY RUN] Ominięto zapis pliku JSON do bazy: {f}")
+            continue
 
         sql = """
             INSERT INTO files_json (
@@ -48,20 +69,9 @@ def insert_new_json_files(ti):
             VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s)
         """
 
-        params = (
-            f,  # filename
-            "json",  # extension
-            False,  # validated
-            None,  # validation_time
-            False,  # table_created
-            None,  # table_name
-            file_size,  # file_size_kb
-            None,  # row_count
-            None,  # error_message
-        )
-
+        params = (f, "json", False, None, False, None, file_size, None, None)
         hook.run(sql, parameters=params)
-        print(f"Zarejestrowano plik JSON: {f} ({file_size} KB)")
+        logging.info(f"ZAPISANO PRODUKCYJNIE JSON: {f} ({file_size} KB)")
 
 
 with DAG(
