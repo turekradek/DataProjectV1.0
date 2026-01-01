@@ -1,4 +1,4 @@
-
+from datetime import datetime
 
 
 def render_pretty_table(df, filename):
@@ -6,8 +6,8 @@ def render_pretty_table(df, filename):
     Zamienia DataFrame w nowoczesną, interaktywną tabelę HTML.
     """
     # Generowanie podstawowej tabeli przez Pandas
-    html_table = df.to_html(classes='table table-striped table-hover table-borderless align-middle', index=False)
-    
+    html_table = df.to_html(classes="table table-striped table-hover table-borderless align-middle", index=False)
+
     return f"""
     <html>
         <head>
@@ -72,3 +72,12 @@ def render_pretty_table(df, filename):
         </body>
     </html>
     """
+
+
+def to_prometheus_time(dt_str):
+    """Konwertuje datę na timestamp (sekundy), co jest jedyną formą liczbową daty w Promu."""
+    try:
+        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        return dt.timestamp()
+    except:
+        return None

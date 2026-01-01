@@ -2,6 +2,7 @@
 .venv
 .vscode
 
+app.log
 src/__pycache__/
 src/dataprojectv1/__pycache__
 src/dataprojectv1/api/__pycache__

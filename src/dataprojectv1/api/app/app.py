@@ -3,14 +3,20 @@ from prometheus_flask_exporter import PrometheusMetrics
 from flask import url_for
 
 import os
+import json
+from flask import Response
+from datetime import datetime
 import logging
 from datetime import datetime
 import pandas as pd
 
 from .utils import render_pretty_table
+from .utils import to_prometheus_time
 
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
+
+METRICS_FOLDER = "/app/prometheus_metrics"  # Dostosuj ścieżkę do swojego kontenera
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -203,6 +209,41 @@ def customize_df_html(
         dict(selector="tr:nth-child(odd)", props=[("background-color", odd_row_bg_color)]),
     ]
     return df.style.set_table_styles(styles).to_html()
+
+
+@app.route("/prometheus")
+def prometheus_metrics():
+    output = []
+    if not os.path.exists(METRICS_FOLDER):
+        return Response("# Folder nie istnieje", status=200, mimetype="text/plain")
+
+    for filename in os.listdir(METRICS_FOLDER):
+        if filename.endswith(".json"):
+            metric_name = os.path.splitext(filename)[0].replace("-", "_").replace(".", "_")
+            file_path = os.path.join(METRICS_FOLDER, filename)
+
+            try:
+                with open(file_path, "r") as f:
+                    data = json.load(f)
+
+                    # Budowanie stringa etykiet: {key1="val1", key2="val2"}
+                    labels = []
+                    for key, value in data.items():
+                        clean_key = key.replace("-", "_").replace(" ", "_")
+                        # Wartości w etykietach muszą być stringami w cudzysłowie
+                        labels.append(f'{clean_key}="{value}"')
+
+                    labels_str = "{" + ",".join(labels) + "}"
+
+                    # Wynik: nazwa_metki{etykiety} 1
+                    output.append(f"# HELP {metric_name} Metadata from {filename}")
+                    output.append(f"# TYPE {metric_name} gauge")
+                    output.append(f"{metric_name}{labels_str} 1")
+
+            except Exception as e:
+                logger.error(f"Błąd pliku {filename}: {e}")
+
+    return Response("\n".join(output) + "\n", mimetype="text/plain")
 
 
 @app.route("/bronze")

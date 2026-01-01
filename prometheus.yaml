@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s # Domyślny interwał dla wszystkich zadań
+  evaluation_interval: 15s # Jak często obliczać reguły alertów
+
+scrape_configs:
+  # Twój główny cel - aplikacja Flask
+  - job_name: "flask-app"
+    scrape_interval: 15s
+    metrics_path: "/prometheus"
+    static_configs:
+      - targets: ["api:5000"]
+
+  # Monitoring samego Prometheusa (Best Practice)
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
