@@ -1,0 +1,21 @@
+graph TD
+    subgraph Przepływ_Danych
+        A[Pliki JSON/CSV] -->|Airflow DAG| B[(Postgres DB)]
+        A -->|Flask App| C{Endpoint /prometheus}
+        C -->|Scrape| D[Prometheus]
+        D --> E[Grafana Dashboard]
+        B -->|Query| C
+    end
+    %% Trik: Niewidoczne połączenie między końcem pierwszego a początkiem drugiego bloku
+    %%E ~~~ K
+    Przepływ_Danych ~~~ Architektura_Sieci
+
+    subgraph Architektura_Sieci
+        K[Kafka] -->|Pub/Sub| F[Flask API]
+        F -->|Write| P[(Postgres)]
+        User((Użytkownik)) -->|Request| F
+    end
+
+    %% Trik: Niewidoczne połączenie między końcem pierwszego a początkiem drugiego bloku
+    %%E ~~~ K
+

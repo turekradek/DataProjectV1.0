@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant U as User/Browser
+    participant F as Flask API
+    participant P as Prometheus
+    
+    U->>F: GET /prometheus
+    F->>F: Czytaj pliki JSON
+    F-->>U: Dane w formacie tekstowym
+    P->>F: Scrape co 15s

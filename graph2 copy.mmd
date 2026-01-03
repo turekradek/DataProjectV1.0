@@ -1,0 +1,18 @@
+graph TD
+    subgraph Data
+        
+        %% Definiujemy źródła i wymuszamy ich pozycję względem siebie
+        A[Files CSV]
+        B[Files JSON]
+        
+        %% Trik: Niewidoczne połączenie ustawia je w pionowej kolumnie
+        A ~~~ B
+        
+        %% Połączenia do bazy
+        A -->|Airflow DAG| C[(Postgres DB)]
+        B -->|Airflow DAG| C
+        
+        %% Dalszy ciąg
+        C --> D[Grafana]
+    end
+    
