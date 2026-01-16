@@ -15,13 +15,6 @@ services:
       # Mapowanie folderów z danymi do obróbki
       - ./filescsv:/filescsv:Z
 
-      # - postgres_data:/var/lib/postgresql/data
-      # - /home/r/git_projekty//project/docker_volume:/docker_volume
-      # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze
-      # - /home/r/git_projekty/dataEngdataEngieneeringProjectieneeringProject/project/silver:/silver
-      # - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json
     ports:
       - "5433:5432"
     networks:
@@ -33,13 +26,7 @@ services:
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml:Z
       - metrics:/prometheus:Z
-      # - /home/r/git_projekty/dataEngieneeringProject/project/prometheus.yaml:/etc/prometheus/prometheus.yaml
-      # - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume
-      # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze
-      # - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver
-      # - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json
+
     ports:
       - "9090:9090"
     networks:
@@ -50,12 +37,7 @@ services:
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana:Z
-      # - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume
-      # - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze
-      # - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver
-      # - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv
-      # - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json
+
     ports:
       - "3000:3000"
     environment:

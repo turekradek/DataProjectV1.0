@@ -14,5 +14,11 @@ src/app.log
 
 # airflow logs
 airflow/logs/dag*
-airflow/logs
+airflow/logs/
+airflow/logs/scheduler/
 airflow/dags/__pycache__/
+airflow/logs/**/*
+!airflow/logs/.gitkeep
+
+**/__pycache__/
+*.py[cod]
