@@ -55,18 +55,18 @@ WITH gender_logic AS (
 random_assignments AS (
     SELECT 
         g.nb,
-        CASE 
-            WHEN g.is_female THEN 
-                (ARRAY['Anna', 'Maria', 'Katarzyna', 'Malgorzata', 'Agnieszka'])[floor(random() * 5 + 1)]
-            ELSE 
-                (ARRAY['Adam', 'Piotr', 'Krzysztof', 'Andrzej', 'Tomasz'])[floor(random() * 10 + 1)]
-        END as r_name,
-        CASE 
-            WHEN g.is_female THEN 
-                (ARRAY['Kowalska', 'Nowak', 'Wisniewska', 'Wojcik', 'Kowalczyk'])[floor(random() * 5 + 1)]
-            ELSE 
-                (ARRAY['Kowalski', 'Nowak', 'Wisniewski', 'Wojcik', 'Kowalczyk'])[floor(random() * 10 + 1)]
-        END as r_lastname
+        CASE  
+    WHEN g.is_female THEN  
+        (ARRAY['Anna', 'Maria', 'Katarzyna', 'Malgorzata', 'Agnieszka'])[floor(random() * 5)::int + 1]
+    ELSE  
+        (ARRAY['Adam', 'Piotr', 'Krzysztof', 'Andrzej', 'Tomasz'])[floor(random() * 5)::int + 1]
+    END as r_name,
+        CASE  
+    WHEN g.is_female THEN  
+        (ARRAY['Kowalska', 'Nowak', 'Wisniewska', 'Wojcik', 'Kowalczyk'])[floor(random() * 5)::int + 1]
+    ELSE  
+        (ARRAY['Kowalski', 'Nowak', 'Wisniewski', 'Wojcik', 'Kowalczyk'])[floor(random() * 5)::int + 1]
+    END as r_lastname
     FROM gender_logic g
 )
 UPDATE projecttables.testtable t

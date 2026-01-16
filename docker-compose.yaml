@@ -59,8 +59,10 @@ services:
     environment:
       - FLASK_DEBUG=1
       # ZMIANA: Ścieżka do modułu musi uwzględniać to, że /app to Twoje src
-      - FLASK_APP=dataprojectv1.api.app.app
+      - FLASK_APP=/app/dataprojectv1/api/app/app.py
       - PYTHONPATH=/app
+      # Dodaj to, aby widzieć błędy w logach natychmiast
+      - PYTHONUNBUFFERED=1
     ports:
       - "5000:5000"
     depends_on:
@@ -189,7 +191,7 @@ services:
     depends_on:
       - db
     environment:
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgresdb:5432/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - _AIRFLOW_DB_UPGRADE=true

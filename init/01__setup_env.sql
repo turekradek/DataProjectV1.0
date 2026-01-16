@@ -15,6 +15,9 @@ $$;
 CREATE SCHEMA IF NOT EXISTS projecttables;
 ALTER SCHEMA projecttables OWNER TO dataengieneer;
 
--- 4. Uprawnienia dla Airflow (wykonuje się w kontekście bazy dbpostgres, 
--- ale Airflow i tak sam zarządza swoją bazą po połączeniu)
-GRANT ALL PRIVILEGES ON DATABASE airflow TO ${POSTGRES_USER:-postgres};
+-- 4. Uprawnienia dla Airflow (Poprawione na czysty SQL)
+-- Zamiast zmiennej ${}, nadajemy uprawnienia domyślnemu superuserowi
+GRANT ALL PRIVILEGES ON DATABASE airflow TO postgres;
+
+-- Jeśli chcesz nadać uprawnienia również swojemu nowemu użytkownikowi:
+GRANT ALL PRIVILEGES ON DATABASE airflow TO dataengieneer;

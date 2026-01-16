@@ -212,7 +212,7 @@ def customize_df_html(
 
 
 @app.route("/prometheus")
-def prometheus_metrics():
+def get_custom_prometheus_data():
     output = []
     if not os.path.exists(METRICS_FOLDER):
         return Response("# Folder nie istnieje", status=200, mimetype="text/plain")

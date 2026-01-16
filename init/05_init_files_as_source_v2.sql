@@ -31,19 +31,13 @@ END$$;
 CREATE TABLE IF NOT EXISTS projecttables.files_as_source (
     id SERIAL PRIMARY KEY,
     filename VARCHAR(255) NOT NULL,
-    target_system data_target_type NOT NULL,
+    target_system target_system_type NOT NULL,
     target_name VARCHAR(255) NOT NULL,
-    
-    -- Nowa kolumna stanu procesu
     process_state process_state_type DEFAULT 'active',
-    
-    -- Sugestia: Priorytet procesu (1-najniższy, 10-najwyższy)
-    priority INTEGER DEFAULT 5 CHECK (priority BETWEEN 1 AND 10),
-    
-    description TEXT,
+    priority INTEGER DEFAULT 5,
+    description TEXT, -- <--- SPRAWDŹ CZY TA LINIA TU JEST
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     last_modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    
     UNIQUE(filename, target_system, target_name)
 );
 
