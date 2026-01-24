@@ -1,10 +1,24 @@
 version: "3.8"
 
+volumes:
+  es_data:
+  postgres_data:
+  bronze:
+  silver:
+  gold:
+  metrics:
+  grafana_data:
+
+networks:
+  project1_network:
+    driver: bridge
+
 services:
   db:
     image: docker.io/library/postgres:16-alpine #DockerfilePostgres
     container_name: postgresdb
-    restart: always
+    restart: always #unless-stopped  # Lepiej niż 'always' przy błędach konfiguracji
+    shm_size: 128mb # Ważne przy skomplikowanych zapytaniach/sortowaniu
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres} #postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password} #password
@@ -19,10 +33,23 @@ services:
       - "5433:5432"
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
   prometheus:
-    image: docker.io/prom/prometheus:latest
+    image: docker.io/prom/prometheus:v2.48.0 # Konkretna wersja dla stabilności # latest
     container_name: prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d" # Ograniczenie czasu przechowywania danych
+      - "--storage.tsdb.retention.size=5GB" # Ograniczenie fizycznego rozmiaru bazy
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml:Z
       - metrics:/prometheus:Z
@@ -31,10 +58,15 @@ services:
       - "9090:9090"
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G # Zapobiega "wyciekom" pamięci przy dużych zapytaniach
 
   grafana:
-    image: docker.io/grafana/grafana:latest
+    image: docker.io/grafana/grafana:10.2.3 #-alpine # Lżejsza i stabilna wersja # latest
     container_name: grafana
+    restart: unless-stopped # always
     volumes:
       - grafana_data:/var/lib/grafana:Z
 
@@ -42,8 +74,14 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_ANALYTICS_REPORTING_ENABLED=false # Wyłączenie zbędnej telemetrii
+      - GF_USERS_ALLOW_SIGN_UP=false # Dobre praktyki bezpieczeństwa
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M # Grafana rzadko potrzebuje więcej przy małych projektach
 
   flask_app:
     build:
@@ -70,44 +108,70 @@ services:
     networks:
       - project1_network
 
-  # python_container:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile2
-  #   # image: python:1.0
-  #   container_name: pythonapp
-  #   volumes:
-  #     - ./scripts:/scripts
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - /home/r/git_projekty/dataEngieneeringProject/project/docker_volume:/docker_volume
-  #     - /home/r/git_projekty/dataEngieneeringProject/project/bronze:/bronze
-  #     - /home/r/git_projekty/dataEngieneeringProject/project/silver:/silver
-  #     - /home/r/git_projekty/dataEngieneeringProject/project/gold:/gold
-  #     - /home/r/git_projekty/dataEngieneeringProject/project/files_csv:/files_csv
-  #     - /home/r/git_projekty/dataEngieneeringProject/project/files_json:/files_json
-  #   depends_on:
-  #     - db
-  #   command: >
-  #     sh -c "tail -f /dev/null"
-  #   networks:
-  #     - project1_network
+  python_container:
+    build:
+      context: .
+      dockerfile: docker/python_app/Dockerfile
+    # image: python:1.0
+    container_name: pythonapp
+    restart: unless-stopped
+    volumes:
+      - ./scripts:/scripts:Z
+      # - postgres_data:/var/lib/postgresql/data
+      - ./docker_volume:/docker_volume:Z
+      - ./bronze:/bronze:Z
+      - ./silver:/silver:Z
+      - ./gold:/gold:Z
+      - ./files_csv:/files_csv:ro
+      - ./files_json:/files_json:ro
+    depends_on:
+      - db
+    command: >
+      sh -c "tail -f /dev/null"
+    networks:
+      - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     container_name: elasticsearch
+    restart: unless-stopped # always
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      # Ograniczenie pamięci JVM (bardzo ważne dla "odchudzenia")
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      # Wyłączenie zbędnych modułów dla oszczędności RAM
+      - xpack.ml.enabled=false
+      - xpack.graph.enabled=false
+      - xpack.watcher.enabled=false
+      - ingest.geoip.downloader.enabled=false
+      - http.cors.enabled=true
+      - http.cors.allow-origin="*"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data:Z
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - "9200:9200"
       - "9300:9300"
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G # Limit kontenera nieco wyższy niż JVM Heap
 
   # filebeat:
   #   image: docker.elastic.co/beats/filebeat:8.17.0
   #   container_name: filebeat
   #   user: root
+  #   command: ["--strict.perms=false"] # Ułatwia pracę z podmontowanym plikiem yml
   #   volumes:
   #     - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
   #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -118,61 +182,94 @@ services:
   #     - project1_network
   #   depends_on:
   #     - elasticsearch
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M # Agent nie powinien zużywać dużo RAMu
+  #         cpus: '0.2'
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.17.0
-    container_name: kibana
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    ports:
-      - "5601:5601"
-    networks:
-      - project1_network
+  # kibana:   # if you need complex tool to visualize and manage ES if not use easticvue only
+  #   image: docker.elastic.co/kibana/kibana:8.17.0
+  #   container_name: kibana
+  #   restart: unless-stopped
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #     - TELEMETRY_ENABLED=false # Wyłączenie zbędnej analityki
+  #     - xpack.reporting.enabled=false # Oszczędność zasobów, jeśli nie generujesz raportów PDF
+  #   ports:
+  #     - "5601:5601"
+  #   networks:
+  #     - project1_network
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G # Kibana potrzebuje minimum ok. 800MB-1GB do stabilnego działania
 
   elasticvue:
     image: docker.io/cars10/elasticvue
     container_name: elasticvue
+    restart: unless-stopped
     ports:
       - "8080:8080"
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 64M # Minimalne zapotrzebowanie
 
-  zookeeper:
-    image: docker.io/confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
-    volumes:
-      - ./data/zookeeper/data:/var/lib/zookeeper/data:Z
-      - ./data/zookeeper/log:/var/lib/zookeeper/log:Z
-    networks:
-      - project1_network
+  # zookeeper: # new kafka setup needs zookeeper only for older versions compatibility now doesnt need it
+  #   image: docker.io/confluentinc/cp-zookeeper:3.9-alpine
+  #   container_name: zookeeper
+  #   restart: unless-stopped
+  #   environment:
+  #     ZOOKEEPER_CLIENT_PORT: 2181
+  #     ZOOKEEPER_TICK_TIME: 2000
+  #   ports:
+  #     - "2181:2181"
+  #   volumes:
+  #     - ./data/zookeeper/data:/var/lib/zookeeper/data:Z
+  #     - ./data/zookeeper/log:/var/lib/zookeeper/log:Z
+  #   networks:
+  #     - project1_network
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M
 
   kafka:
-    image: docker.io/confluentinc/cp-kafka:7.5.0
+    image: docker.io/apache/kafka:3.7.0 # docker.io/confluentinc/cp-kafka:7.5.0
     container_name: kafka
+    restart: unless-stopped
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_BROKER_ID: 1
+      KAFKA_NODE_ID: 1 # Nowa konfiguracja Kafki 3.7+
+      KAFKA_PROCESS_ROLES: "broker,controller" # Nowa konfiguracja Kafki 3.7+
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093" # Nowa konfiguracja Kafki 3.7+
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093 # new
+      # KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT #PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9092:9092"
     volumes:
       - ./data/kafka/data:/var/lib/kafka/data:Z
-    depends_on:
-      - zookeeper
+    # depends_on:
+    #   - zookeeper
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   kafka-ui:
-    image: docker.io/provectuslabs/kafka-ui:latest
+    image: docker.io/provectuslabs/kafka-ui:v0.7.1
     container_name: kafka-ui
+    restart: unless-stopped
     depends_on:
       - kafka # Czekaj, aż kontener Kafki wystartuje
     ports:
@@ -180,13 +277,20 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "false" # Dodatkowe ustawienie ograniczające użycie RAM przez UI
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   airflow-webserver:
     image: docker.io/apache/airflow:2.8.0-python3.11
     container_name: airflow_webserver
-    command: webserver
+    # command: webserver
+    # Łączymy db upgrade i webserver w jedną komendę, by mieć pewność, że baza jest gotowa
+    command: bash -c "airflow db migrate && airflow users create --username admin --firstname admin --lastname admin --role Admin --email admin@example.com --password admin && airflow webserver"
     restart: always
     depends_on:
       - db
@@ -198,6 +302,9 @@ services:
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=admin
       - _AIRFLOW_WWW_USER_PASSWORD=admin
+      # Optymalizacja wydajności (odchudzanie procesów)
+      - AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL=30
+      - AIRFLOW__CORE__DAG_PAUSED_AT_CREATION=True
     volumes:
       # Upewnij się, że te foldery istnieją w Twoim Root (nie w src!)
       - ./airflow/dags:/opt/airflow/dags:Z
@@ -207,6 +314,10 @@ services:
       - "8082:8080"
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G # Airflow potrzebuje minimum 1-1.5GB, by działać płynnie
 
   airflow-scheduler:
     image: docker.io/apache/airflow:2.8.0-python3.11
@@ -215,9 +326,12 @@ services:
     restart: always
     depends_on:
       - airflow-webserver
+      - db
     environment:
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgresdb:5432/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      # Oszczędność CPU: rzadsze skanowanie folderu z DAGami
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=60
     volumes:
       - ./airflow/dags:/opt/airflow/dags:Z
       - ./airflow/logs:/opt/airflow/logs:Z
@@ -226,15 +340,19 @@ services:
       - ./filesjson:/filesjson:Z
     networks:
       - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+# volumes:
+#   es_data:
+#   postgres_data:
+#   bronze:
+#   silver:
+#   gold:
+#   metrics:
+#   grafana_data:
 
-volumes:
-  postgres_data:
-  bronze:
-  silver:
-  gold:
-  metrics:
-  grafana_data:
-
-networks:
-  project1_network:
-    driver: bridge
+# networks:
+#   project1_network:
+#     driver: bridge
