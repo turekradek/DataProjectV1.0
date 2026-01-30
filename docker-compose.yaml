@@ -39,6 +39,27 @@ services:
           cpus: "0.5"
           memory: 512M
 
+  jupyter:
+    image: quay.io/jupyter/pyspark-notebook:latest
+    container_name: jupyter_spark
+    ports:
+      - "8888:8888"
+    volumes:
+      # Mapowanie Twoich notebooków
+      - ./notebooks:/home/jovyan/work:Z
+      # Opcjonalnie: dostęp do plików CSV z Twojego projektu
+      - ./filescsv:/home/jovyan/work/data:Z
+    working_dir: /home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=admin # Twoje hasło do logowania
+    networks:
+      - project1_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G # Spark potrzebuje min. 2GB, by nie "zamrozić" systemu
+
   prometheus:
     image: docker.io/prom/prometheus:v2.48.0 # Konkretna wersja dla stabilności # latest
     container_name: prometheus

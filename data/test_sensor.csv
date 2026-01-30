@@ -1,0 +1,6 @@
+id,type,location,rack,env,status,version,value
+S-001,temp,warsaw,R-10,prod,active,2.1,21.4
+S-002,temp,warsaw,R-10,prod,active,2.1,22.1
+S-003,hum,warsaw,R-10,prod,active,2.0,44.5
+S-004,load,warsaw,R-11,dev,active,2.1,0.45
+S-005,temp,krakow,DC-01,prod,active,2.1,19.5
