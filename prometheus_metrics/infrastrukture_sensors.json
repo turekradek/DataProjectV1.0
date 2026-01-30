@@ -1,0 +1,156 @@
+{
+    "project": "enterprise_monitoring_v2",
+    "deployment_env": "production",
+    "sensors": [
+        {
+            "id": "S-001",
+            "type": "temp",
+            "location": "warsaw",
+            "rack": "R-10",
+            "env": "prod",
+            "status": "active",
+            "version": "2.1",
+            "value": 21.4
+        },
+        {
+            "id": "S-002",
+            "type": "temp",
+            "location": "warsaw",
+            "rack": "R-10",
+            "env": "prod",
+            "status": "active",
+            "version": "2.1",
+            "value": 22.1
+        },
+        {
+            "id": "S-003",
+            "type": "hum",
+            "location": "warsaw",
+            "rack": "R-10",
+            "env": "prod",
+            "status": "active",
+            "version": "2.0",
+            "value": 44.5
+        },
+        {
+            "id": "S-004",
+            "type": "load",
+            "location": "warsaw",
+            "rack": "R-11",
+            "env": "dev",
+            "status": "active",
+            "version": "2.1",
+            "value": 0.45
+        },
+        {
+            "id": "S-005",
+            "type": "temp",
+            "location": "krakow",
+            "rack": "DC-01",
+            "env": "prod",
+            "status": "active",
+            "version": "2.1",
+            "value": 19.5
+        },
+        {
+            "id": "S-006",
+            "type": "temp",
+            "location": "krakow",
+            "rack": "DC-01",
+            "env": "prod",
+            "status": "maintenance",
+            "version": "1.8",
+            "value": 25.0
+        },
+        {
+            "id": "S-007",
+            "type": "hum",
+            "location": "krakow",
+            "rack": "DC-02",
+            "env": "prod",
+            "status": "active",
+            "version": "2.0",
+            "value": 48.2
+        },
+        {
+            "id": "S-008",
+            "type": "load",
+            "location": "krakow",
+            "rack": "DC-02",
+            "env": "prod",
+            "status": "active",
+            "version": "2.1",
+            "value": 0.88
+        },
+        {
+            "id": "S-009",
+            "type": "temp",
+            "location": "berlin",
+            "rack": "B-01",
+            "env": "test",
+            "status": "active",
+            "version": "2.2",
+            "value": 20.1
+        },
+        {
+            "id": "S-010",
+            "type": "hum",
+            "location": "berlin",
+            "rack": "B-01",
+            "env": "test",
+            "status": "active",
+            "version": "2.0",
+            "value": 42.1
+        },
+        {
+            "id": "S-011",
+            "type": "power",
+            "location": "berlin",
+            "rack": "B-05",
+            "env": "prod",
+            "status": "alert",
+            "version": "3.0",
+            "value": 230.5
+        },
+        {
+            "id": "S-012",
+            "type": "power",
+            "location": "berlin",
+            "rack": "B-05",
+            "env": "prod",
+            "status": "active",
+            "version": "3.0",
+            "value": 229.8
+        },
+        {
+            "id": "S-013",
+            "type": "temp",
+            "location": "warsaw",
+            "rack": "R-05",
+            "env": "prod",
+            "status": "active",
+            "version": "2.1",
+            "value": 20.8
+        },
+        {
+            "id": "S-014",
+            "type": "temp",
+            "location": "krakow",
+            "rack": "DC-05",
+            "env": "prod",
+            "status": "active",
+            "version": "2.1",
+            "value": 18.9
+        },
+        {
+            "id": "S-015",
+            "type": "hum",
+            "location": "berlin",
+            "rack": "B-10",
+            "env": "prod",
+            "status": "active",
+            "version": "2.0",
+            "value": 46.7
+        }
+    ]
+}

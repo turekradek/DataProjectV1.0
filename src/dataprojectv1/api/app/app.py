@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, render_template_string
 from prometheus_flask_exporter import PrometheusMetrics
 from flask import url_for
+import urllib.parse
 
 import os
 import json
@@ -12,6 +13,7 @@ import pandas as pd
 
 from .utils import render_pretty_table
 from .utils import to_prometheus_time
+from .utils import CustomVariables as CusVars
 
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
@@ -39,6 +41,11 @@ def index():
     return f"Hello, World! <br> {current_time}"
 
 
+@app.route("/services")
+def list_services():
+    return render_template_string(CusVars.HTML_TEMPLATE, services=CusVars.SERVICE_AVAILABLE)
+
+
 @app.route("/routes2", methods=["GET"])
 def list_routes2():
     output = []
@@ -50,7 +57,6 @@ def list_routes2():
 
 @app.route("/routes", methods=["GET"])
 def list_routes():
-    import urllib.parse
 
     links = []
     # Pobieramy wszystkie reguły z mapy URL Flaska
@@ -219,25 +225,33 @@ def get_custom_prometheus_data():
 
     for filename in os.listdir(METRICS_FOLDER):
         if filename.endswith(".json"):
-            metric_name = os.path.splitext(filename)[0].replace("-", "_").replace(".", "_")
             file_path = os.path.join(METRICS_FOLDER, filename)
-
             try:
                 with open(file_path, "r") as f:
                     data = json.load(f)
 
-                    # Budowanie stringa etykiet: {key1="val1", key2="val2"}
-                    labels = []
-                    for key, value in data.items():
-                        clean_key = key.replace("-", "_").replace(" ", "_")
-                        # Wartości w etykietach muszą być stringami w cudzysłowie
-                        labels.append(f'{clean_key}="{value}"')
-
-                    labels_str = "{" + ",".join(labels) + "}"
-
-                    # Wynik: nazwa_metki{etykiety} 1
-                    output.append(f"# HELP {metric_name} Metadata from {filename}")
+                # --- PRZYPADEK 1: Duży plik z listą 'sensors' ---
+                if "sensors" in data and isinstance(data["sensors"], list):
+                    metric_name = "infrastructure_sensor_value"
+                    output.append(f"# HELP {metric_name} Multi-sensor data from {filename}")
                     output.append(f"# TYPE {metric_name} gauge")
+
+                    for sensor in data["sensors"]:
+                        labels = []
+                        value = sensor.get("value", 1)  # Pobieramy realną wartość
+                        for k, v in sensor.items():
+                            if k != "value":  # 'value' nie może być etykietą!
+                                labels.append(f'{k.replace("-", "_")}="{v}"')
+
+                        labels_str = "{" + ",".join(labels) + "}"
+                        output.append(f"{metric_name}{labels_str} {value}")
+
+                # --- PRZYPADEK 2: Stary, prosty plik (taki jak miałeś wcześniej) ---
+                else:
+                    metric_name = os.path.splitext(filename)[0].replace("-", "_")
+                    labels = [f'{k}="{v}"' for k, v in data.items()]
+                    labels_str = "{" + ",".join(labels) + "}"
+                    output.append(f"# HELP {metric_name} Simple metadata")
                     output.append(f"{metric_name}{labels_str} 1")
 
             except Exception as e:

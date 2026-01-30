@@ -76,6 +76,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_ANALYTICS_REPORTING_ENABLED=false # Wyłączenie zbędnej telemetrii
       - GF_USERS_ALLOW_SIGN_UP=false # Dobre praktyki bezpieczeństwa
+      - GF_LIVE_ENABLED=false # Wyłączenie Live, jeśli nie jest potrzebne
     networks:
       - project1_network
     deploy:
