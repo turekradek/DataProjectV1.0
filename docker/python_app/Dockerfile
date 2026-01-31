@@ -1,41 +1,39 @@
-# Wykorzystujemy stabilną wersję slim dla oszczędności miejsca
-FROM docker.io/library/python:3.11-slim
-
-# Zapobiega tworzeniu plików .pyc i zapewnia natychmiastowe logi
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# --- ETAP 1: Builder ---
+FROM docker.io/library/python:3.11-slim AS builder
 
 WORKDIR /app
-
-# Instalacja zależności systemowych (narzędzia sieciowe i sterowniki baz danych)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    curl \
-    iputils-ping \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalacja kluczowych bibliotek do Data Engineeringu
-# Instalujemy je tutaj, aby nie musieć przebudowywać obrazu przy każdej zmianie skryptów
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir \
-    pandas \
-    polars \
-    sqlalchemy \
-    psycopg2-binary \
-    kafka-python \
-    elasticsearch \
-    requests \
-    python-dotenv
+RUN pip install --no-cache-dir --upgrade pip
+COPY requirements.txt . 
+# Instalujemy paczki do folderu lokalnego
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Tworzymy strukturę folderów zgodną z Twoim Medallion Architecture
-RUN mkdir -p /scripts /bronze /silver /gold /files_csv /files_json /docker_volume
+# --- ETAP 2: Runtime ---
+FROM docker.io/library/python:3.11-slim
 
-# Ustawiamy PYTHONPATH, aby Python widział Twoje moduły
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/scripts
 
-# Nie kopiujemy kodu tutaj, ponieważ używasz wolumenów (Volumes) do pracy "na żywo"
-# To pozwala na edycję skryptów na hoście bez przebudowywania obrazu
+WORKDIR /app
+
+# Kopiujemy tylko zainstalowane paczki z poprzedniego etapu
+COPY --from=builder /install /usr/local
+
+# Instalujemy tylko niezbędne narzędzia do debugowania i biblioteki runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    vim \
+    nano \
+    net-tools \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Struktura Medallion
+RUN mkdir -p /scripts /bronze /silver /gold /files_csv /files_json
 
 CMD ["tail", "-f", "/dev/null"]
