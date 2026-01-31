@@ -9,9 +9,9 @@ def list_directory_content(directory_path):
     print(f"Sprawdzam ścieżkę: {directory_path}")
     if os.path.exists(directory_path):
         files = os.listdir(directory_path)
-        print(f"Znaleziono {len(files)} plików w {directory_path}:")
+        print(f" \n\nZnaleziono {len(files)} \t plików w {directory_path}:")
         for file in files:
-            print(f"- {file}")
+            print(f"\t- {file}")
     else:
         print(f"BŁĄD: Katalog {directory_path} nie istnieje!")
         raise FileNotFoundError(f"Path {directory_path} not found")
@@ -31,4 +31,5 @@ with DAG(
         task_id="list_json_files", python_callable=list_directory_content, op_args=["/filesjson"]
     )
 
-    check_csv >> check_json
+    check_csv
+    check_json

@@ -318,6 +318,8 @@ services:
       - db
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgresdb:5432/airflow
+      # - AIRFLOW_CONN_POSTGRES_PROJECT=postgresql://postgres:password@postgresdb:5432/dbpostgres
+      - AIRFLOW_CONN_POSTGRES_DB=postgresql://postgres:password@postgresdb:5432/dbpostgres
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - _AIRFLOW_DB_UPGRADE=true
@@ -351,6 +353,8 @@ services:
       - db
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgresdb:5432/airflow
+      # - AIRFLOW_CONN_POSTGRES_PROJECT=postgresql://postgres:password@postgresdb:5432/dbpostgres
+      - AIRFLOW_CONN_POSTGRES_DB=postgresql://postgres:password@postgresdb:5432/dbpostgres
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       # Oszczędność CPU: rzadsze skanowanie folderu z DAGami
       - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL=60
