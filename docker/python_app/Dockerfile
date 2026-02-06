@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir --upgrade pip
-COPY requirements.txt . 
+COPY ./docker/python_app/requirements.txt .
 # Instalujemy paczki do folderu lokalnego
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 

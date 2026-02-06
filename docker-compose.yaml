@@ -26,7 +26,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data:Z # Główny wolumen na dane bazy
       - ./init:/docker-entrypoint-initdb.d:Z # Automatyczne tworzenie tabel przy starcie
-      # Mapowanie folderów z danymi do obróbki
       - ./filescsv:/filescsv:Z
 
     ports:
@@ -143,14 +142,14 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - db
+      - dbpostgres
     networks:
       - project1_network
 
   python_container:
     build:
       context: .
-      dockerfile: docker/python_app/Dockerfile
+      dockerfile: ./docker/python_app/Dockerfile
     # image: python:1.0
     container_name: pythonapp
     restart: unless-stopped
@@ -164,7 +163,7 @@ services:
       - ./files_csv:/files_csv:ro
       - ./files_json:/files_json:ro
     depends_on:
-      - db
+      - dbpostgres
     command: >
       sh -c "tail -f /dev/null"
     networks:
@@ -332,7 +331,7 @@ services:
     command: bash -c "airflow db migrate && airflow users create --username admin --firstname admin --lastname admin --role Admin --email admin@example.com --password admin && airflow webserver"
     restart: always
     depends_on:
-      - db
+      - dbpostgres
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgresdb:5432/airflow
       # - AIRFLOW_CONN_POSTGRES_PROJECT=postgresql://postgres:password@postgresdb:5432/dbpostgres
@@ -367,7 +366,7 @@ services:
     restart: always
     depends_on:
       - airflow-webserver
-      - db
+      - dbpostgres
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgresdb:5432/airflow
       # - AIRFLOW_CONN_POSTGRES_PROJECT=postgresql://postgres:password@postgresdb:5432/dbpostgres

@@ -1,0 +1,13 @@
+# Baza danych (PostgreSQL)
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.0
+pandas>=2.1.0
+
+# Formaty plików (CSV, JSON, Parquet dla Silver/Gold)
+pyarrow>=14.0.0
+fastparquet>=2023.10.0
+
+# Narzędzia pomocnicze
+python-dotenv>=1.0.0
+requests>=2.31.0
+tabulate>=0.9.0
