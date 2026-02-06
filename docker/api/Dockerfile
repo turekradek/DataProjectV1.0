@@ -20,14 +20,15 @@ FROM python:3.11-slim
 WORKDIR /app
 # Kopiujemy tylko zainstalowane pakiety z buildera
 COPY --from=builder /install /usr/local
-COPY src/dataprojectv1 /app/dataprojectv1
-
+# COPY src/dataprojectv1 /app/dataprojectv1
+COPY . . 
 # # Kopiujemy kod źródłowy
 # COPY src/dataprojectv1 /app/dataprojectv1
 
 # Kluczowe zmienne dla Flaska i Pythona
 ENV PYTHONPATH=/app
-ENV FLASK_APP=dataprojectv1.api.app.app.py
+# ENV FLASK_APP=dataprojectv1.api.app.app.py
+ENV FLASK_APP=src.dataprojectv1.api.app.py
 
 # Wyłączenie zapisu plików .pyc (oszczędność miejsca)
 ENV PYTHONDONTWRITEBYTECODE=1

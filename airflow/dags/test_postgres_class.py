@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime
-from db_utils import PostgresManager  # Import Twojej klasy
+from ...src.dataprojectv1.db_utils import PostgresManager
 
 with DAG(dag_id="db_class_example", start_date=datetime(2026, 1, 1), schedule_interval=None, catchup=False) as dag:
 

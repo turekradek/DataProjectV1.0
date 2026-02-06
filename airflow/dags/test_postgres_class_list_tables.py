@@ -1,7 +1,8 @@
 from airflow import DAG
 from airflow.decorators import task
 from datetime import datetime
-from db_utils import PostgresManager
+from ...src.dataprojectv1.db_utils import PostgresManager
+
 import logging
 from tabulate import tabulate
 

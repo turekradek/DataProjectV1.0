@@ -16,7 +16,7 @@ networks:
 services:
   db:
     image: docker.io/library/postgres:16-alpine #DockerfilePostgres
-    container_name: postgresdb
+    container_name: dbpostgres
     restart: always #unless-stopped  # Lepiej niż 'always' przy błędach konfiguracji
     shm_size: 128mb # Ważne przy skomplikowanych zapytaniach/sortowaniu
     environment:
@@ -38,6 +38,23 @@ services:
         limits:
           cpus: "0.5"
           memory: 512M
+
+  fastapi_app:
+    build:
+      context: .
+      dockerfile: ./docker/fastapi/Dockerfile
+    container_name: fastapi_app
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/app:Z # Mapujemy główny katalog do /app
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://postgres:postgres@dbpostgres:5432/dbpostgres
+    networks:
+      - project1_network
+    depends_on:
+      - dbpostgres
 
   jupyter:
     image: quay.io/jupyter/pyspark-notebook:latest
@@ -111,7 +128,7 @@ services:
       dockerfile: docker/api/Dockerfile
     container_name: flask_app
     volumes:
-      - ./src:/app:Z
+      - ./app:Z
       - ./prometheus_metrics:/app/prometheus_metrics:Z
       - ./filescsv:/app/filescsv:Z
       - ./filesjson:/app/filesjson:Z
@@ -119,7 +136,7 @@ services:
     environment:
       - FLASK_DEBUG=1
       # ZMIANA: Ścieżka do modułu musi uwzględniać to, że /app to Twoje src
-      - FLASK_APP=/app/dataprojectv1/api/app/app.py
+      - FLASK_APP=/app/dataprojectv1/api/app.py
       - PYTHONPATH=/app
       # Dodaj to, aby widzieć błędy w logach natychmiast
       - PYTHONUNBUFFERED=1

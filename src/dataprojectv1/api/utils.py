@@ -25,6 +25,8 @@ class CustomVariables:
         "airflow": "http://localhost:8082",
         "jupyterlab": "http://localhost:8888",
         "postgres": "localhost:5433",  # Port zewnętrzny, który zmapowałeś (5433:5432)
+        "fastapi": "http://localhost:8001/",
+        "fastapidocs": "http://localhost:8001/docs",
     }
 
     HTML_TEMPLATE = """
